@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus AI - Free Image Generator</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            850: '#1f2937',
+                            900: '#111827',
+                            950: '#030712',
+                        },
+                        primary: {
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                        }
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Puter.js API -->
+    <script src="https://js.puter.com/v2/"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+            background-image: radial-gradient(circle at top center, rgba(139, 92, 246, 0.15) 0%, transparent 50%);
+            background-repeat: no-repeat;
+            min-height: 100vh;
+        }
+        
+        .glass-panel {
+            background: rgba(31, 41, 55, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+
+        .image-reveal {
+            animation: reveal 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            opacity: 0;
+            transform: scale(0.95);
+        }
+
+        @keyframes reveal {
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+<body class="antialiased selection:bg-primary-500 selection:text-white">
+
+    <!-- Navbar -->
+    <nav class="border-b border-gray-800 glass-panel sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="bg-primary-600 p-2 rounded-xl bg-gradient-to-br from-primary-500 to-purple-700 shadow-lg shadow-primary-500/30">
+                        <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+                    </div>
+                    <span class="font-bold text-xl tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">Nexus AI</span>
+                </div>
+                <div class="flex items-center gap-4">
+                    <a href="https://puter.com" target="_blank" class="text-xs font-medium px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 hover:bg-gray-700 transition-colors flex items-center gap-2">
+                        <span>Powered by Puter.js</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+        
+        <div class="text-center mb-10 md:mb-16">
+            <h1 class="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">
+                Imagine. <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary-400 to-purple-500">Generate.</span> Create.
+            </h1>
+            <p class="text-gray-400 max-w-2xl mx-auto text-lg">
+                Bring your ideas to life with powerful, free, and unlimited AI image generation models directly in your browser.
+            </p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+            
+            <!-- Left Column: Controls -->
+            <div class="lg:col-span-5 space-y-6">
+                <form id="generate-form" class="glass-panel p-6 sm:p-8 rounded-2xl shadow-xl space-y-6">
+                    
+                    <!-- Prompt Input -->
+                    <div class="space-y-2">
+                        <label for="prompt" class="block text-sm font-medium text-gray-300">Your Prompt</label>
+                        <div class="relative">
+                            <textarea id="prompt" rows="4" 
+                                class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none transition-all"
+                                placeholder="A cinematic shot of a futuristic city with flying cars at sunset, highly detailed, 8k..."
+                                required></textarea>
+                            <button type="button" id="clear-prompt" class="absolute top-3 right-3 text-gray-500 hover:text-gray-300 transition-colors hidden">
+                                <i data-lucide="x-circle" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="space-y-2">
+                        <label for="model" class="block text-sm font-medium text-gray-300">AI Model</label>
+                        <div class="relative">
+                            <select id="model" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer transition-all">
+                                <optgroup label="Fast & General">
+                                    <option value="gemini-2.5-flash-image-preview">Gemini 2.5 Flash Image (Nano Banana)</option>
+                                    <option value="black-forest-labs/FLUX.1-schnell">Flux.1 Schnell</option>
+                                    <option value="gpt-image-1">GPT Image 1</option>
+                                </optgroup>
+                                <optgroup label="High Quality">
+                                    <option value="dall-e-3" selected>DALL-E 3</option>
+                                    <option value="stabilityai/stable-diffusion-3-medium">Stable Diffusion 3</option>
+                                    <option value="RunDiffusion/Juggernaut-pro-flux">Juggernaut Pro Flux</option>
+                                </optgroup>
+                                <optgroup label="Others">
+                                    <option value="dall-e-2">DALL-E 2</option>
+                                    <option value="Qwen/Qwen-Image">Qwen Image</option>
+                                    <option value="Lykon/DreamShaper">DreamShaper</option>
+                                </optgroup>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quality Selection (Dynamic) -->
+                    <div id="quality-wrapper" class="space-y-2">
+                        <label for="quality" class="block text-sm font-medium text-gray-300">Image Quality</label>
+                        <div class="relative">
+                            <select id="quality" class="w-full bg-gray-900 border border-gray-700 rounded-xl px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none cursor-pointer transition-all">
+                                <!-- Options injected by JS -->
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
+                                <i data-lucide="chevron-down" class="w-4 h-4"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" id="generate-btn" class="w-full bg-gradient-to-r from-primary-600 to-purple-600 hover:from-primary-500 hover:to-purple-500 text-white font-semibold py-3.5 px-6 rounded-xl shadow-lg shadow-primary-500/25 transition-all duration-200 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed">
+                        <i data-lucide="wand-2" class="w-5 h-5 group-hover:rotate-12 transition-transform" id="btn-icon"></i>
+                        <span id="btn-text">Generate Image</span>
+                    </button>
+                    
+                    <div id="error-message" class="hidden mt-4 p-3 bg-red-900/40 border border-red-500/50 rounded-lg text-red-200 text-sm flex items-start gap-2">
+                        <i data-lucide="alert-circle" class="w-4 h-4 mt-0.5 shrink-0"></i>
+                        <span id="error-text">An error occurred while generating the image.</span>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Right Column: Image Output -->
+            <div class="lg:col-span-7 flex flex-col h-full min-h-[400px] lg:min-h-[600px]">
+                <div class="glass-panel border border-gray-800 rounded-2xl overflow-hidden flex-1 relative flex items-center justify-center bg-gray-900/50 group">
+                    
+                    <!-- Empty State -->
+                    <div id="empty-state" class="absolute inset-0 flex flex-col items-center justify-center text-gray-500 p-8 text-center transition-opacity duration-300">
+                        <div class="w-20 h-20 mb-4 rounded-full bg-gray-800 flex items-center justify-center border border-gray-700">
+                            <i data-lucide="image" class="w-8 h-8 text-gray-400"></i>
+                        </div>
+                        <h3 class="text-xl font-medium text-gray-300 mb-2">No Image Yet</h3>
+                        <p class="text-sm max-w-sm">Enter a prompt and hit generate to see the AI magic happen right here.</p>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="loading-state" class="absolute inset-0 flex flex-col items-center justify-center bg-gray-900/80 backdrop-blur-sm z-10 hidden transition-opacity duration-300">
+                        <div class="relative w-24 h-24 mb-6">
+                            <div class="absolute inset-0 border-4 border-gray-700 rounded-full"></div>
+                            <div class="absolute inset-0 border-4 border-primary-500 rounded-full border-t-transparent animate-spin"></div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <i data-lucide="sparkles" class="w-6 h-6 text-primary-400 animate-pulse"></i>
+                            </div>
+                        </div>
+                        <p class="text-lg font-medium text-white mb-2 animate-pulse">Crafting your vision...</p>
+                        <p class="text-sm text-gray-400" id="loading-model-text">Using DALL-E 3</p>
+                    </div>
+
+                    <!-- Image Container -->
+                    <div id="image-container" class="w-full h-full flex items-center justify-center p-2 hidden z-0">
+                        <!-- Image appended here -->
+                    </div>
+                    
+                    <!-- Action Overlay (Download) -->
+                    <div id="action-overlay" class="absolute bottom-0 inset-x-0 p-4 bg-gradient-to-t from-gray-950 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 hidden z-20 flex justify-end">
+                        <button id="download-btn" class="bg-white text-gray-900 hover:bg-gray-100 font-medium py-2 px-4 rounded-lg shadow-lg flex items-center gap-2 transition-transform transform hover:scale-105">
+                            <i data-lucide="download" class="w-4 h-4"></i>
+                            Download
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // Initialize Icons
+        lucide.createIcons();
+
+        // DOM Elements
+        const form = document.getElementById('generate-form');
+        const promptInput = document.getElementById('prompt');
+        const clearPromptBtn = document.getElementById('clear-prompt');
+        const modelSelect = document.getElementById('model');
+        const qualitySelect = document.getElementById('quality');
+        const qualityWrapper = document.getElementById('quality-wrapper');
+        const generateBtn = document.getElementById('generate-btn');
+        const btnText = document.getElementById('btn-text');
+        const btnIcon = document.getElementById('btn-icon');
+        const emptyState = document.getElementById('empty-state');
+        const loadingState = document.getElementById('loading-state');
+        const imageContainer = document.getElementById('image-container');
+        const actionOverlay = document.getElementById('action-overlay');
+        const downloadBtn = document.getElementById('download-btn');
+        const errorMessage = document.getElementById('error-message');
+        const errorText = document.getElementById('error-text');
+        const loadingModelText = document.getElementById('loading-model-text');
+
+        let currentImageSrc = null;
+
+        // Model Quality Configuration map
+        const qualityMap = {
+            'gpt-image-1': ['low', 'medium', 'high'],
+            'gpt-image-1-mini': ['low', 'medium', 'high'],
+            'dall-e-3': ['standard', 'hd']
+        };
+
+        // Handle Prompt Clear
+        promptInput.addEventListener('input', () => {
+            if (promptInput.value.length > 0) {
+                clearPromptBtn.classList.remove('hidden');
+            } else {
+                clearPromptBtn.classList.add('hidden');
+            }
+        });
+
+        clearPromptBtn.addEventListener('click', () => {
+            promptInput.value = '';
+            clearPromptBtn.classList.add('hidden');
+            promptInput.focus();
+        });
+
+        // Dynamic Quality Dropdown Update
+        function updateQualityDropdown() {
+            const selectedModel = modelSelect.value;
+            const availableQualities = qualityMap[selectedModel];
+
+            if (availableQualities) {
+                qualityWrapper.style.display = 'block';
+                qualitySelect.innerHTML = availableQualities.map(q => 
+                    `<option value="${q}" ${q === 'standard' || q === 'low' ? 'selected' : ''}>${q.charAt(0).toUpperCase() + q.slice(1)}</option>`
+                ).join('');
+            } else {
+                qualityWrapper.style.display = 'none';
+                qualitySelect.innerHTML = '';
+            }
+        }
+
+        // Run on load and on change
+        modelSelect.addEventListener('change', updateQualityDropdown);
+        updateQualityDropdown();
+
+        // Form Submit Handler
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const prompt = promptInput.value.trim();
+            const model = modelSelect.value;
+            const quality = qualitySelect.value;
+            const modelName = modelSelect.options[modelSelect.selectedIndex].text;
+
+            if (!prompt) return;
+
+            // Update UI for loading
+            generateBtn.disabled = true;
+            btnText.textContent = 'Generating...';
+            btnIcon.setAttribute('data-lucide', 'loader-2');
+            btnIcon.classList.add('animate-spin');
+            lucide.createIcons();
+            
+            errorMessage.classList.add('hidden');
+            emptyState.classList.add('hidden');
+            imageContainer.classList.add('hidden');
+            actionOverlay.classList.add('hidden');
+            loadingState.classList.remove('hidden');
+            loadingModelText.textContent = `Using ${modelName}`;
+            
+            imageContainer.innerHTML = ''; // Clear previous
+
+            try {
+                // Prepare options for Puter API
+                const options = { model: model };
+                if (qualityMap[model]) {
+                    options.quality = quality;
+                }
+
+                // Call Puter.js API
+                const imgElement = await puter.ai.txt2img(prompt, options);
+
+                // Style the returned image
+                imgElement.className = "max-w-full max-h-full object-contain rounded-xl shadow-2xl image-reveal";
+                imgElement.alt = prompt;
+                
+                // Keep reference for download
+                currentImageSrc = imgElement.src;
+
+                // Display Image
+                imageContainer.appendChild(imgElement);
+                loadingState.classList.add('hidden');
+                imageContainer.classList.remove('hidden');
+                imageContainer.classList.add('flex');
+                actionOverlay.classList.remove('hidden');
+
+            } catch (error) {
+                console.error("Image Generation Error:", error);
+                loadingState.classList.add('hidden');
+                
+                // Show empty state if no previous image exists
+                if(imageContainer.innerHTML === '') {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    imageContainer.classList.remove('hidden');
+                    actionOverlay.classList.remove('hidden');
+                }
+
+                errorMessage.classList.remove('hidden');
+                errorText.textContent = error.message || "Failed to generate image. Please try another prompt or model.";
+            } finally {
+                // Reset Button UI
+                generateBtn.disabled = false;
+                btnText.textContent = 'Generate Image';
+                btnIcon.setAttribute('data-lucide', 'wand-2');
+                btnIcon.classList.remove('animate-spin');
+                lucide.createIcons();
+            }
+        });
+
+        // Download logic
+        downloadBtn.addEventListener('click', () => {
+            if (!currentImageSrc) return;
+            
+            const a = document.createElement('a');
+            a.href = currentImageSrc;
+            // Generate a random-ish filename based on prompt
+            const cleanPrompt = promptInput.value.trim().substring(0, 30).replace(/[^a-z0-9]/gi, '_').toLowerCase();
+            a.download = `nexus_ai_${cleanPrompt || 'image'}.png`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        });
+
+    </script>
+</body>
+</html>

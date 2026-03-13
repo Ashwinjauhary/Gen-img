@@ -1,25 +1,80 @@
-// Sanitize user input
-const sanitizedPrompt = promptInput.value.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;');
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Generation</title>
+    <style>
+        /* Basic styling to ensure elements are visible and laid out properly */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <input id="promptInput" type="text" placeholder="Enter your prompt here">
+    <button id="generateButton">Generate Image</button>
+    <div id="loadingState" class="hidden">Loading...</div>
+    <div id="imageContainer" class="hidden"></div>
+    <div id="emptyState" class="hidden">No image generated yet.</div>
+    <div id="actionOverlay" class="hidden">
+        <p id="errorText"></p>
+        <div id="errorMessage" class="hidden">Failed to generate image. Please try another prompt or model.</div>
+    </div>
 
-// Call Puter.js API with sanitized input
-const imgElement = await puter.ai.txt2img(sanitizedPrompt, options);
+    <script>
+        // Get elements
+        const promptInput = document.getElementById('promptInput');
+        const generateButton = document.getElementById('generateButton');
+        const loadingState = document.getElementById('loadingState');
+        const imageContainer = document.getElementById('imageContainer');
+        const emptyState = document.getElementById('emptyState');
+        const actionOverlay = document.getElementById('actionOverlay');
+        const errorMessage = document.getElementById('errorMessage');
+        const errorText = document.getElementById('errorText');
 
-// ...
+        // Add event listener to generate button
+        generateButton.addEventListener('click', async () => {
+            try {
+                // Sanitize user input properly
+                const userInput = promptInput.value.trim();
+                const sanitizedPrompt = userInput.replace(/[^a-zA-Z0-9\s]/g, '');
 
-// Handle error messages more securely
-catch (error) {
-    console.error("Image Generation Error:", error);
-    loadingState.classList.add('hidden');
-    
-    // Show empty state if no previous image exists
-    if(imageContainer.innerHTML === '') {
-        emptyState.classList.remove('hidden');
-    } else {
-        imageContainer.classList.remove('hidden');
-        actionOverlay.classList.remove('hidden');
-    }
+                // Options for Puter.js API
+                const options = {
+                    // Add your options here, e.g., model, size, etc.
+                };
 
-    // Display a generic error message
-    errorMessage.classList.remove('hidden');
-    errorText.textContent = "Failed to generate image. Please try another prompt or model.";
-}
+                // Call Puter.js API with sanitized input
+                const imgElement = await puter.ai.txt2img(sanitizedPrompt, options);
+
+                // Display generated image
+                imageContainer.innerHTML = '';
+                imageContainer.appendChild(imgElement);
+                imageContainer.classList.remove('hidden');
+                actionOverlay.classList.remove('hidden');
+                loadingState.classList.add('hidden');
+                emptyState.classList.add('hidden');
+            } catch (error) {
+                console.error("Image Generation Error:", error);
+                loadingState.classList.add('hidden');
+                
+                // Show empty state if no previous image exists
+                if(imageContainer.innerHTML === '') {
+                    emptyState.classList.remove('hidden');
+                } else {
+                    imageContainer.classList.remove('hidden');
+                    actionOverlay.classList.remove('hidden');
+                }
+
+                // Display a generic error message without exposing error details
+                errorMessage.classList.remove('hidden');
+                errorText.textContent = "Failed to generate image. Please try another prompt or model.";
+            }
+        });
+    </script>
+</body>
+</html>
